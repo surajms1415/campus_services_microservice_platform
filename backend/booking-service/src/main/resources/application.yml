@@ -1,0 +1,67 @@
+server:
+  port: ${BOOKING_SERVICE_PORT:8083}
+
+spring:
+  application:
+    name: booking-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.campusservices.booking: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/booking_service_db?useSSL=false&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+services:
+  facility:
+    url: ${FACILITY_SERVICE_URL:http://localhost:8082}
+
+resilience4j:
+  retry:
+    instances:
+      facilityService:
+        maxAttempts: 3
+        waitDuration: 2s
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.RestClientException
+  circuitbreaker:
+    instances:
+      facilityService:
+        slidingWindowSize: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+        minimumNumberOfCalls: 3
+        recordExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.RestClientException
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}

@@ -1,0 +1,78 @@
+
+services:
+  # PRIVATE SERVICES (Internal only, not exposed to internet)
+  - type: pserv
+    name: user-service
+    env: java
+    buildCommand: mvn clean install -DskipTests -pl user-service -am
+    startCommand: java -jar user-service/target/*.jar
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: campus-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+
+  - type: pserv
+    name: facility-service
+    env: java
+    buildCommand: mvn clean install -DskipTests -pl facility-service -am
+    startCommand: java -jar facility-service/target/*.jar
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: campus-db
+          property: connectionString
+      - key: REDIS_HOST
+        value: red-xxxx.render.com
+      - key: REDIS_PORT
+        value: 6379
+
+  - type: pserv
+    name: booking-service
+    env: java
+    buildCommand: mvn clean install -DskipTests -pl booking-service -am
+    startCommand: java -jar booking-service/target/*.jar
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: campus-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: FACILITY_SERVICE_URL
+        value: http://facility-service:8080
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8080
+
+  - type: pserv
+    name: notification-service
+    env: java
+    buildCommand: mvn clean install -DskipTests -pl notification-service -am
+    startCommand: java -jar notification-service/target/*.jar
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: campus-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+
+  # PUBLIC WEB SERVICE (API Gateway)
+  - type: web
+    name: api-gateway
+    env: java
+    buildCommand: mvn clean install -DskipTests -pl api-gateway -am
+    startCommand: java -jar api-gateway/target/*.jar
+    envVars:
+      - key: USER_SERVICE_URL
+        value: http://user-service:8080
+      - key: FACILITY_SERVICE_URL
+        value: http://facility-service:8080
+      - key: BOOKING_SERVICE_URL
+        value: http://booking-service:8080
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8080
+      - key: FRONTEND_URL
+        value: https://campus-services-frontend.vercel.app
